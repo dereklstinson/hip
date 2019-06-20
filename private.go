@@ -98,17 +98,6 @@ import "C"
 //func  hipCtxGetFlags(unsigned int* flags)error{return status(C.hipCtxGetFlags(unsigned int* flags)).error("hipCtxGetFlags")}
 //func  hipCtxEnablePeerAccess(hipCtx_t peerCtx, unsigned int flags)error{return status(C.hipCtxEnablePeerAccess(hipCtx_t peerCtx, unsigned int flags)).error("hipCtxEnablePeerAccess")}
 //func  hipCtxDisablePeerAccess(hipCtx_t peerCtx)error{return status(C.hipCtxDisablePeerAccess(hipCtx_t peerCtx)).error("hipCtxDisablePeerAccess")}
-//func  hipDevicePrimaryCtxGetState(hipDevice_t dev, unsigned int* flags, int* active)error{return status(C.hipDevicePrimaryCtxGetState(hipDevice_t dev, unsigned int* flags, int* active)).error("hipDevicePrimaryCtxGetState")}
-//func  hipDevicePrimaryCtxRelease(hipDevice_t dev)error{return status(C.hipDevicePrimaryCtxRelease(hipDevice_t dev)).error("hipDevicePrimaryCtxRelease")}
-//func  hipDevicePrimaryCtxRetain(hipCtx_t* pctx, hipDevice_t dev)error{return status(C.hipDevicePrimaryCtxRetain(hipCtx_t* pctx, hipDevice_t dev)).error("hipDevicePrimaryCtxRetain")}
-//func  hipDevicePrimaryCtxReset(hipDevice_t dev)error{return status(C.hipDevicePrimaryCtxReset(hipDevice_t dev)).error("hipDevicePrimaryCtxReset")}
-//func  hipDevicePrimaryCtxSetFlags(hipDevice_t dev, unsigned int flags)error{return status(C.hipDevicePrimaryCtxSetFlags(hipDevice_t dev, unsigned int flags)).error("hipDevicePrimaryCtxSetFlags")}
-//func  hipDeviceGet(hipDevice_t* device, int ordinal)error{return status(C.hipDeviceGet(hipDevice_t* device, int ordinal)).error("hipDeviceGet")}
-//func  hipDeviceComputeCapability(int* major, int* minor, hipDevice_t device)error{return status(C.hipDeviceComputeCapability(int* major, int* minor, hipDevice_t device)).error("hipDeviceComputeCapability")}
-//func  hipDeviceGetName(char* name, int len, hipDevice_t device)error{return status(C.hipDeviceGetName(char* name, int len, hipDevice_t device)).error("hipDeviceGetName")}
-//func  hipDeviceGetPCIBusId(char* pciBusId, int len, int device)error{return status(C.hipDeviceGetPCIBusId(char* pciBusId, int len, int device)).error("hipDeviceGetPCIBusId")}
-//func  hipDeviceGetByPCIBusId(int* device, const char* pciBusId)error{return status(C.hipDeviceGetByPCIBusId(int* device, const char* pciBusId)).error("hipDeviceGetByPCIBusId")}
-//func  hipDeviceTotalMem(size_t* bytes, hipDevice_t device)error{return status(C.hipDeviceTotalMem(size_t* bytes, hipDevice_t device)).error("hipDeviceTotalMem")}
 //func  hipDriverGetVersion(int* driverVersion)error{return status(C.hipDriverGetVersion(int* driverVersion)).error("hipDriverGetVersion")}
 //func  hipRuntimeGetVersion(int* runtimeVersion)error{return status(C.hipRuntimeGetVersion(int* runtimeVersion)).error("hipRuntimeGetVersion")}
 //func  hipModuleLoad(hipModule_t* module, const char* fname)error{return status(C.hipModuleLoad(hipModule_t* module, const char* fname)).error("hipModuleLoad")}

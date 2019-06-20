@@ -5,13 +5,12 @@ import "C"
 import "errors"
 
 func init() {
-	x := C.hipInit(1)
+	x := C.hipInit(0)
 	if x != 0 {
 		panic(x)
 	}
 }
 
-type Device C.hipDevice_t
 type Context struct {
 	c C.hipCtx_t
 }
@@ -33,7 +32,7 @@ type FuncAtributes struct {
 type Event struct {
 	e C.hipEvent_t
 }
-type DeviceAttribute C.hipDeviceAttribute_t
+
 type status C.hipError_t
 
 type ComputeMode C.uint
@@ -211,26 +210,8 @@ typedef enum hipJitOption {
 
 
 
-//On AMD devices and some Nvidia devices, these hints and controls are ignored.
-
-typedef enum hipFuncCache_t {
-    hipFuncCachePreferNone,    ///< no preference for shared memory or L1 (default)
-    hipFuncCachePreferShared,  ///< prefer larger shared memory and smaller L1 cache
-    hipFuncCachePreferL1,      ///< prefer larger L1 cache and smaller shared memory
-    hipFuncCachePreferEqual,   ///< prefer equal size L1 cache and shared memory
-} hipFuncCache_t;
 
 
-
-// @warning On AMD devices and some Nvidia devices, these hints and controls are ignored.
-
-typedef enum hipSharedMemConfig {
-    hipSharedMemBankSizeDefault,  ///< The compiler selects a device-specific value for the banking.
-    hipSharedMemBankSizeFourByte,  ///< Shared mem is banked at 4-bytes intervals and performs best
-                                   ///< when adjacent threads access data 4 bytes apart.
-    hipSharedMemBankSizeEightByte  ///< Shared mem is banked at 8-byte intervals and performs best
-                                   ///< when adjacent threads access data 4 bytes apart.
-} hipSharedMemConfig;
 
 
 typedef struct dim3 {
