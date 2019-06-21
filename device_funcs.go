@@ -56,28 +56,28 @@ func DeviceGetLimit(limit Limit) (pValue uint, err error) {
 
 //for hipgo this has to be used with .so functions
 func FuncSetCacheConfig(sofunc unsafe.Pointer, config FuncCache) error {
-	return status(C.hipFuncSetCacheConfig(sofunc, config.c())).error("hipFuncSetCacheConfig")
+	return status(C.hipFuncSetCacheConfig(sofunc, config.c())).error("FuncSetCacheConfig")
 }
 func DeviceGetSharedMemConfig() (pConfig SharedMemConfig, err error) {
-	err = status(C.hipDeviceGetSharedMemConfig(pConfig.cptr())).error("hipDeviceGetSharedMemConfig")
+	err = status(C.hipDeviceGetSharedMemConfig(pConfig.cptr())).error("DeviceGetSharedMemConfig")
 	return pConfig, err
 }
 func DeviceSetSharedMemConfig(pConfig SharedMemConfig) error {
-	return status(C.hipDeviceSetSharedMemConfig(pConfig.c())).error("hipDeviceSetSharedMemConfig")
+	return status(C.hipDeviceSetSharedMemConfig(pConfig.c())).error("DeviceSetSharedMemConfig")
 }
 func SetDeviceFlags(dflag DeviceFlag) error {
-	return status(C.hipSetDeviceFlags(dflag.c())).error("hipSetDeviceFlags")
+	return status(C.hipSetDeviceFlags(dflag.c())).error("SetDeviceFlags")
 }
 
 func ChooseDevice(prop *DeviceProp) (device int32, err error) {
-	err = status(C.hipChooseDevice((*C.int)(&device), prop.cptr())).error("hipChooseDevice")
+	err = status(C.hipChooseDevice((*C.int)(&device), prop.cptr())).error("ChooseDevice")
 	return device, err
 }
 
 func DeviceGetPCIBusId(device int32) (pciBusId string, err error) {
 	length := C.int(255)
 	bid := make([]C.char, length)
-	err = status(C.hipDeviceGetPCIBusId(&bid[0], length, (C.int)(device))).error("hipDeviceGetPCIBusId")
+	err = status(C.hipDeviceGetPCIBusId(&bid[0], length, (C.int)(device))).error("DeviceGetPCIBusId")
 	pciBusId = C.GoString(&bid[0])
 	return pciBusId, err
 
@@ -89,34 +89,52 @@ func DeviceGetByPCIBusId(pciBusId string) (device int32, err error) {
 	for i := range bid {
 		cbid[i] = (C.char)(bid[i])
 	}
-	err = status(C.hipDeviceGetByPCIBusId((*C.int)(&device), &cbid[0])).error("hipDeviceGetByPCIBusId")
+	err = status(C.hipDeviceGetByPCIBusId((*C.int)(&device), &cbid[0])).error("DeviceGetByPCIBusId")
 	return device, err
 }
 
 func DeviceGet(ordinal int32) (d Device, err error) {
-	err = status(C.hipDeviceGet(d.cptr(), (C.int)(ordinal))).error("hipDeviceGet")
+	err = status(C.hipDeviceGet(d.cptr(), (C.int)(ordinal))).error("DeviceGet")
 	return d, err
 }
 func (d Device) ComputeCapability() (major, minor int32, err error) {
-	err = status(C.hipDeviceComputeCapability((*C.int)(&major), (*C.int)(&minor), d.c())).error("hipDeviceComputeCapability")
+	err = status(C.hipDeviceComputeCapability((*C.int)(&major), (*C.int)(&minor), d.c())).error("(d Device) ComputeCapability()")
 	return major, minor, err
 }
 func (d Device) GetName() (name string, err error) {
 	length := C.int(255)
 	cname := make([]C.char, length)
-	err = status(C.hipDeviceGetName(&cname[0], length, d.c())).error("hipDeviceGetName")
+	err = status(C.hipDeviceGetName(&cname[0], length, d.c())).error("(d Device) GetName()")
 	name = C.GoString(&cname[0])
 	return name, err
 }
 func (d Device) GetTotalMem() (totalSIB uint, err error) {
 	var sib C.size_t
-	err = status(C.hipDeviceTotalMem(&sib, d.c())).error("GetTotalMem")
+	err = status(C.hipDeviceTotalMem(&sib, d.c())).error("(d Device) GetTotalMem()")
 	totalSIB = (uint)(sib)
 	return totalSIB, err
 }
 
-//func  hipDevicePrimaryCtxGetState(hipDevice_t dev, unsigned int* flags, int* active)error{return status(C.hipDevicePrimaryCtxGetState(hipDevice_t dev, unsigned int* flags, int* active)).error("hipDevicePrimaryCtxGetState")}
-//func  hipDevicePrimaryCtxRelease(hipDevice_t dev)error{return status(C.hipDevicePrimaryCtxRelease(hipDevice_t dev)).error("hipDevicePrimaryCtxRelease")}
-//func  hipDevicePrimaryCtxRetain(hipCtx_t* pctx, hipDevice_t dev)error{return status(C.hipDevicePrimaryCtxRetain(hipCtx_t* pctx, hipDevice_t dev)).error("hipDevicePrimaryCtxRetain")}
-//func  hipDevicePrimaryCtxReset(hipDevice_t dev)error{return status(C.hipDevicePrimaryCtxReset(hipDevice_t dev)).error("hipDevicePrimaryCtxReset")}
-//func  hipDevicePrimaryCtxSetFlags(hipDevice_t dev, unsigned int flags)error{return status(C.hipDevicePrimaryCtxSetFlags(hipDevice_t dev, unsigned int flags)).error("hipDevicePrimaryCtxSetFlags")}
+func (d Device) PrimaryCtxGetState() (flags uint32, active bool, err error) {
+	var act C.int
+	err = status(C.hipDevicePrimaryCtxGetState(d.c(), (*C.uint)(&flags), &act)).error("(d Device) PrimaryCtxGetState()")
+	if act > 0 {
+		active = true
+	}
+	return flags, active, err
+}
+func (d Device) PrimaryCtxRelease() error {
+	return status(C.hipDevicePrimaryCtxRelease(d.c())).error("(d Device)PrimaryCtxRelease()")
+}
+func (d Device) PrimaryCtxRetain() (pctx *Context, err error) {
+	pctx = new(Context)
+	err = status(C.hipDevicePrimaryCtxRetain(&pctx.c, d.c())).error("hipDevicePrimaryCtxRetain")
+	return pctx, err
+}
+func (d Device) PrimaryCtxReset() error {
+	return status(C.hipDevicePrimaryCtxReset(d.c())).error("hipDevicePrimaryCtxReset")
+}
+
+func (d Device) PrimaryCtxSetFlags(flags uint32) error {
+	return status(C.hipDevicePrimaryCtxSetFlags(d.c(), (C.uint)(flags))).error("hipDevicePrimaryCtxSetFlags")
+}

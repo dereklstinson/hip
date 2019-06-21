@@ -5,9 +5,9 @@ import "C"
 import "errors"
 
 func init() {
-	x := C.hipInit(0)
-	if x != 0 {
-		panic(x)
+	err := status(C.hipInit(0)).error("go: intit C.hipInit")
+	if err != nil {
+		panic(err)
 	}
 }
 
@@ -211,8 +211,16 @@ typedef enum hipJitOption {
 
 
 
+typedef struct hipPointerAttribute_t {
+    enum hipMemoryType memoryType;
+    int device;
+    void* devicePointer;
+    void* hostPointer;
+    int isManaged;
+    unsigned allocationFlags;
+   	} hipPointerAttribute_t;
 
-
+//func  hipPointerGetAttributes(hipPointerAttribute_t* attributes, const void* ptr)error{return status(C.hipPointerGetAttributes(hipPointerAttribute_t* attributes, const void* ptr)).error("hipPointerGetAttributes")}
 
 typedef struct dim3 {
     uint32_t x;  ///< x
