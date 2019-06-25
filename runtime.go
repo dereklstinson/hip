@@ -20,12 +20,7 @@ type IpcMemHandle struct {
 type IpcEventHandle struct {
 	i C.hipIpcEventHandle_t
 }
-type Module struct {
-	m C.hipModule_t
-}
-type Function struct {
-	f C.hipFunction_t
-}
+
 type FuncAtributes struct {
 	f C.hipFuncAttributes
 }
