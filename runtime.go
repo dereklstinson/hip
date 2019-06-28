@@ -11,9 +11,6 @@ func init() {
 	}
 }
 
-type Context struct {
-	c C.hipCtx_t
-}
 type IpcMemHandle struct {
 	i C.hipIpcMemHandle_t
 }
@@ -180,6 +177,7 @@ func (e status) error(comment string) error {
 	}
 	return errors.New("hipgo: error unknown")
 }
+func GetLastError() error { return status(C.hipGetLastError()).error("GetLastError") }
 
 /*
 typedef enum hipJitOption {

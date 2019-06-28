@@ -17,6 +17,14 @@ type hipmem struct {
 type DevicePtr struct {
 	d C.hipDeviceptr_t
 }
+
+func (d *DevicePtr) Ptr() unsafe.Pointer {
+	return (unsafe.Pointer)(d.d)
+}
+func (d *DevicePtr) DPtr() *unsafe.Pointer {
+	return (*unsafe.Pointer)(&d.d)
+}
+
 type HipArrayDescriptor C.HIP_ARRAY_DESCRIPTOR
 
 /*typedef struct HIP_ARRAY_DESCRIPTOR {
@@ -181,6 +189,10 @@ func (m *MemCpyKind) HtoH() MemCpyKind {
 }
 func (m *MemCpyKind) HtoD() MemCpyKind {
 	*m = (MemCpyKind)(C.hipMemcpyHostToDevice)
+	return *m
+}
+func (m *MemCpyKind) DtoH() MemCpyKind {
+	*m = (MemCpyKind)(C.hipMemcpyDeviceToHost)
 	return *m
 }
 func (m *MemCpyKind) DtoD() MemCpyKind {

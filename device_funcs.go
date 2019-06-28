@@ -15,7 +15,7 @@ func DeviceSynchronize() error {
 }
 func DeviceReset() error { return status(C.hipDeviceReset()).error("hipDeviceReset") }
 
-func pSetDevice(deviceID int32) error {
+func SetDevice(deviceID int32) error {
 	return status(C.hipSetDevice((C.int)(deviceID))).error("hipSetDevice")
 }
 func GetDevice() (deviceID int32, err error) {

@@ -1,5 +1,5 @@
 #example make file for kernal
-HIP_PATH = /home/derek/amd/hip
+HIP_PATH = /home/derek/amd/github.com/hip
 HIPCC = $(HIP_PATH)/bin/hipcc 
 TARGET_GPU = --targets gfx900 #gfx803 or gfx701 can be used too. If black 
 
