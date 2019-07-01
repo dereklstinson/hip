@@ -57,7 +57,10 @@ int main() {
     args._Cd = (void*) Cd;
     args._elements= elements;  
     size_t size = sizeof(args);
-    printf("size of size %d", (int)size);
+    printf("size of int %d\n",(int)sizeof(elements));
+    printf("size of args._elements %d\n",(int)(sizeof(args._elements)));
+    printf("size of size %d\n", (int)size);
+    
     void* config[] = {HIP_LAUNCH_PARAM_BUFFER_POINTER, &args, HIP_LAUNCH_PARAM_BUFFER_SIZE, &size,
                       HIP_LAUNCH_PARAM_END};
     HIP_CHECK(hipModuleLaunchKernel(Function, 4, 1, 1, 1024, 1, 1, 0, stream, NULL, (void**)&config));
@@ -72,7 +75,7 @@ int counter;
         }
     }
  //   hipDeviceReset();
-printf("\nGot %d out of %d\n",LEN-counter,LEN);
+printf("Got %d out of %d\n",LEN-counter,LEN);
 
  return 0;
 }

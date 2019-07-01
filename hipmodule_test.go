@@ -93,7 +93,7 @@ func TestFunction_Launch(t *testing.T) {
 	if err != nil {
 		t.Error(err)
 	}
-	err = kernelHalfAdd.Launch(conf.ThreadPerBlock, 1, 1, conf.BlockCount, 1, 1, 0, s, gpuA, gpuB, gpuC, (conf.Elements))
+	err = kernelHalfAdd.Launch(conf.GridDim, 1, 1, conf.BlockDim, 1, 1, 0, s, gpuA, gpuB, gpuC, (conf.Elements))
 	if err != nil {
 		t.Error(err)
 	}
@@ -196,7 +196,7 @@ func TestFunction_Launch2(t *testing.T) {
 	if err != nil {
 		t.Error(err)
 	}
-	err = kernelSingleAdd.Launch(conf.ThreadPerBlock, 1, 1, conf.BlockCount, 1, 1, 0, s, gpuA, gpuB, gpuC, (conf.Elements))
+	err = kernelSingleAdd.Launch(conf.GridDim, 1, 1, conf.BlockDim, 1, 1, 0, s, gpuA, gpuB, gpuC, (conf.Elements))
 	if err != nil {
 		t.Error(err)
 	}

@@ -17,14 +17,18 @@ extern "C" __global__
 void KernAddFloat(const float *A,
                   const float *B,
                         float *C,
-                        int N){
+                  const int N){
         GRID_LOOP_X(i,N){
         C[i]=A[i]+B[i];
         }
 
 }
 
-extern "C" __global__ void KernAddHalf(const _Float16 *A,const  _Float16 *B, _Float16  *C, int N){
+extern "C" __global__ void KernAddHalf(
+                        const _Float16 *A,
+                        const  _Float16 *B,
+                         _Float16  *C,
+                         const int N){
 GRID_LOOP_X(i,N){
 C[i]=A[i]+B[i];
 

@@ -6,8 +6,10 @@ package hip
 #include <stdlib.h>
 #include <stdio.h>
 
-const size_t ptrSize = sizeof(void *);
 
+const void ** voiddptrnull = NULL;
+const size_t ptrSize = sizeof(void *);
+const size_t maxArgSize = 8;
 hipError_t golangLaunchKernel(hipFunction_t f, unsigned int gridDimX, unsigned int gridDimY, unsigned int gridDimZ,
 								 unsigned int blockDimX, unsigned int blockDimY, unsigned int blockDimZ,
                                  unsigned int sharedMemBytes, hipStream_t stream,
@@ -16,6 +18,14 @@ hipError_t golangLaunchKernel(hipFunction_t f, unsigned int gridDimX, unsigned i
   return hipModuleLaunchKernel(f,gridDimX, gridDimY,gridDimZ, blockDimX,blockDimY,blockDimZ, sharedMemBytes, stream, NULL,(void**)&config);
 
 								 }
+hipError_t golangLaunchKernelwithcharbuffer(hipFunction_t f, unsigned int gridDimX, unsigned int gridDimY, unsigned int gridDimZ,
+								 unsigned int blockDimX, unsigned int blockDimY, unsigned int blockDimZ,
+                                 unsigned int sharedMemBytes, hipStream_t stream,
+                                 unsigned char *args, size_t sib){
+						     	 void *config[] = {HIP_LAUNCH_PARAM_BUFFER_POINTER,args,HIP_LAUNCH_PARAM_BUFFER_SIZE,&sib,HIP_LAUNCH_PARAM_END};
+  return hipModuleLaunchKernel(f,gridDimX, gridDimY,gridDimZ, blockDimX,blockDimY,blockDimZ, sharedMemBytes, stream, NULL,(void**)&config);
+								 }
+
 */
 import "C"
 import (
@@ -67,12 +77,14 @@ func (m *Module) GetFunction(kernelname string) (f *Function, err error) {
 }
 
 type Function struct {
-	f             C.hipFunction_t
-	args          []unsafe.Pointer
-	sizeofargs    C.size_t
-	sizeofargsptr unsafe.Pointer
-	config        []unsafe.Pointer
-	argsbuffer    [255]C.char
+	f                C.hipFunction_t
+	args             []unsafe.Pointer
+	sizeofargs       C.size_t
+	sizeofargsptr    unsafe.Pointer
+	config           []unsafe.Pointer
+	argsbuffer       [255]C.uchar
+	argsbuffer2      [255]C.uchar
+	unsafeargsbuffer unsafe.Pointer
 }
 
 func (f *Function) Launch(gridDimx, gridDimy, gridDimz uint32,
@@ -81,18 +93,28 @@ func (f *Function) Launch(gridDimx, gridDimy, gridDimz uint32,
 	s *Stream,
 	args ...interface{}) error {
 	//var shold unsafe.Pointer
+	f.interface2uchararray(args)
+	//f.interface2unsafePointercomplete(args)
 
-	f.interface2unsafePointercomplete(args)
 	//C.HIP_LAUNCH_PARAM_BUFFER_POINTER
 	//C.HIP_LAUNCH_PARAM_BUFFER_SIZE
 	//C.HIP_LAUNCH_PARAM_END
 	fmt.Println((C.uint)(gridDimx), (C.uint)(gridDimy), (C.uint)(gridDimz), (C.uint)(blockDimx), (C.uint)(blockDimy), (C.uint)(blockDimz), (C.uint)(sharedMemBytes), f.sizeofargs, f.args)
-	return status(C.golangLaunchKernel(f.f,
+	/*
+		return status(C.golangLaunchKernel(f.f,
+			(C.uint)(gridDimx), (C.uint)(gridDimy), (C.uint)(gridDimz),
+			(C.uint)(blockDimx), (C.uint)(blockDimy), (C.uint)(blockDimz),
+			(C.uint)(sharedMemBytes),
+			s.s,
+			(f.args[0]), f.sizeofargs)).error("golangLaunchKernel")
+	*/
+	return status(C.golangLaunchKernelwithcharbuffer(f.f,
 		(C.uint)(gridDimx), (C.uint)(gridDimy), (C.uint)(gridDimz),
 		(C.uint)(blockDimx), (C.uint)(blockDimy), (C.uint)(blockDimz),
 		(C.uint)(sharedMemBytes),
 		s.s,
-		f.args[0], f.sizeofargs)).error("golangLaunchKernel")
+		(&f.argsbuffer[0]), f.sizeofargs)).error("golangLaunchKernel")
+
 	/*
 
 		f.config = []unsafe.Pointer{(C.HIP_LAUNCH_PARAM_BUFFER_POINTER), f.args[0], (C.HIP_LAUNCH_PARAM_BUFFER_SIZE), f.sizeofargsptr, (C.HIP_LAUNCH_PARAM_END)}
@@ -121,6 +143,56 @@ func (f *Function) setcharbuffer(args []interface{}) error {
 	return nil
 }
 */
+func offset(ptr unsafe.Pointer, offsetinbytes uintptr) unsafe.Pointer {
+	return unsafe.Pointer(uintptr(ptr) + (offsetinbytes))
+}
+func (f *Function) interface2uchararray(args []interface{}) error {
+	for i := range f.argsbuffer {
+		f.argsbuffer[i] = 0
+	}
+	f.unsafeargsbuffer = unsafe.Pointer(&f.argsbuffer[0])
+	var argsizes uintptr
+	for i := range args {
+		if argsizes+8 > 255 {
+			return errors.New("buffer needs to be set bigger")
+		}
+		switch x := args[i].(type) {
+		case nil:
+			C.memcpy(offset(f.unsafeargsbuffer, argsizes), unsafe.Pointer(C.voiddptrnull), C.ptrSize)
+			argsizes += 8
+		case cutil.Mem:
+			//y := reflect.TypeOf(x)
+			C.memcpy(offset(unsafe.Pointer(&f.argsbuffer[argsizes]), argsizes), unsafe.Pointer(x.DPtr()), C.ptrSize)
+			argsizes += 8
+		case int32:
+			y := unsafe.Pointer(&x)
+			C.memcpy(offset(f.unsafeargsbuffer, argsizes), y, C.ptrSize)
+			argsizes += 8
+		case uint32:
+			y := unsafe.Pointer(&x)
+			C.memcpy(offset(f.unsafeargsbuffer, argsizes), y, C.ptrSize)
+			argsizes += 8
+		case bool:
+			if x {
+				val := C.uchar(255)
+				C.memcpy(offset(f.unsafeargsbuffer, argsizes), (unsafe.Pointer)(&val), 1)
+				argsizes += 8
+
+			} else {
+				val := C.uchar(0)
+				C.memcpy(offset(f.unsafeargsbuffer, argsizes), (unsafe.Pointer)(&val), 1)
+				argsizes += 8
+			}
+
+		}
+
+	}
+	f.sizeofargs = (C.size_t)(argsizes)
+	//	var offset uint
+	return nil
+
+}
+
 func (f *Function) interface2unsafePointercomplete(args []interface{}) error {
 	if f.args == nil {
 		return f.firstrunInterface2UnsafePointer(args)
@@ -148,21 +220,12 @@ func (f *Function) interface2unsafePointercomplete(args []interface{}) error {
 				C.memcpy(f.args[i], unsafe.Pointer(&val), C.size_t(4))
 			}
 		case int:
-			val := C.int(x)
-			C.memcpy(f.args[i], unsafe.Pointer(&val), C.size_t(4))
+			val := (C.int)(x)
+			C.memcpy(f.args[i], (unsafe.Pointer)(&val), C.size_t(8))
 		case uint:
-			val := C.uint(x)
-			C.memcpy(f.args[i], unsafe.Pointer(&val), C.size_t(4))
+			val := (C.uint)(x)
+			C.memcpy(f.args[i], (unsafe.Pointer)(&val), C.size_t(8))
 		default:
-			/*
-					val := reflect.ValueOf(x)
-					sizeof := reflect.TypeOf(x).Size()
-					y := unsafe.Pointer(val.Pointer())
-
-					C.memcpy(k.args[i], y, (C.size_t)(sizeof))
-
-				}
-			*/
 			scalar := cutil.CScalarConversion(x)
 			if scalar == nil {
 				return fmt.Errorf("Kernel Launch - type %T not supported .. %+v", x, x)
