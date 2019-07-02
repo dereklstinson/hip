@@ -77,25 +77,27 @@ func (m *Module) GetFunction(kernelname string) (f *Function, err error) {
 }
 
 type Function struct {
-	f                C.hipFunction_t
-	args             []unsafe.Pointer
-	sizeofargs       C.size_t
-	sizeofargsptr    unsafe.Pointer
-	config           []unsafe.Pointer
-	argsbuffer       [255]C.uchar
-	argsbuffer2      [255]C.uchar
-	unsafeargsbuffer unsafe.Pointer
+	f                 C.hipFunction_t
+	args              []unsafe.Pointer
+	sizeofargs        C.size_t
+	sizeofargsptr     unsafe.Pointer
+	config            []unsafe.Pointer
+	argsbuffer        [255]C.uchar
+	argsbuffer2       [255]C.uchar
+	unsafeargsbuffer  unsafe.Pointer
+	unsafeargsbuffer2 unsafe.Pointer
 }
 
+//Launch launches a kernel.
 func (f *Function) Launch(gridDimx, gridDimy, gridDimz uint32,
 	blockDimx, blockDimy, blockDimz uint32,
 	sharedMemBytes uint32,
 	s *Stream,
 	args ...interface{}) error {
 	//var shold unsafe.Pointer
-	f.interface2uchararray(args)
+	//	f.interface2uchararray(args)
 	//f.interface2unsafePointercomplete(args)
-
+	f.thirdattempt(args)
 	//C.HIP_LAUNCH_PARAM_BUFFER_POINTER
 	//C.HIP_LAUNCH_PARAM_BUFFER_SIZE
 	//C.HIP_LAUNCH_PARAM_END
@@ -113,7 +115,7 @@ func (f *Function) Launch(gridDimx, gridDimy, gridDimz uint32,
 		(C.uint)(blockDimx), (C.uint)(blockDimy), (C.uint)(blockDimz),
 		(C.uint)(sharedMemBytes),
 		s.s,
-		(&f.argsbuffer[0]), f.sizeofargs)).error("golangLaunchKernel")
+		(&f.argsbuffer2[0]), f.sizeofargs)).error("golangLaunchKernel")
 
 	/*
 
@@ -143,17 +145,70 @@ func (f *Function) setcharbuffer(args []interface{}) error {
 	return nil
 }
 */
-func offset(ptr unsafe.Pointer, offsetinbytes uintptr) unsafe.Pointer {
-	return unsafe.Pointer(uintptr(ptr) + (offsetinbytes))
+func offsetelement(ptr unsafe.Pointer, element int) unsafe.Pointer {
+	return unsafe.Pointer(uintptr(ptr) + 8*uintptr(element))
+}
+func offset(ptr unsafe.Pointer, sib uintptr) unsafe.Pointer {
+	return unsafe.Pointer(uintptr(ptr) + sib)
+}
+
+func (f *Function) thirdattempt(args []interface{}) error {
+	if f.args == nil || len(args) != len(f.args) {
+		f.args = make([]unsafe.Pointer, len(args))
+	}
+	for i := range f.argsbuffer {
+		f.argsbuffer[i] = 0
+		f.argsbuffer2[i] = 0
+	}
+
+	f.unsafeargsbuffer = unsafe.Pointer(&f.argsbuffer[0])
+	f.unsafeargsbuffer2 = unsafe.Pointer(&f.argsbuffer2[0])
+	for i := range args {
+		fmt.Println(i)
+		switch x := args[i].(type) {
+		case nil:
+			*((*unsafe.Pointer)(offsetelement(f.unsafeargsbuffer, i))) = offsetelement(f.unsafeargsbuffer2, i) // argp[i] = &argv[i]
+			*((*uint64)(offsetelement(f.unsafeargsbuffer2, i))) = *((*uint64)(nil))                            // argv[i] = *f.args[i]
+		case *DevicePtr:
+			*((*unsafe.Pointer)(offsetelement(f.unsafeargsbuffer, i))) = offsetelement(f.unsafeargsbuffer2, i) // argp[i] = &argv[i]
+			usptr := (unsafe.Pointer)(&x.d)
+			*((*uint64)(offsetelement(f.unsafeargsbuffer2, i))) =
+				*((*uint64)(usptr))
+		case cutil.Mem:
+			*((*unsafe.Pointer)(offsetelement(f.unsafeargsbuffer, i))) = offsetelement(f.unsafeargsbuffer2, i) // argp[i] = &argv[i]
+			*((*uint64)(offsetelement(f.unsafeargsbuffer2, i))) =
+				*((*uint64)(x.Ptr())) // argv[i] = *f.args[i]
+		default:
+			y := cutil.CScalarConversion(x)
+			if y == nil {
+				return errors.New("Unsupported arg passed")
+			}
+			*((*unsafe.Pointer)(offsetelement(f.unsafeargsbuffer, i))) = offsetelement(f.unsafeargsbuffer2, i) // argp[i] = &argv[i]
+			*((*uint64)(offsetelement(f.unsafeargsbuffer2, i))) = *((*uint64)(y.CPtr()))                       // argv[i] = *f.args[i]
+
+		}
+
+	}
+	/*
+	   for i:=range f.args{
+	   	*((*unsafe.Pointer)(offset(f.unsafeargsbuffer, i))) = offset(f.unsafeargsbuffer2, i)       // argp[i] = &argv[i]
+	   	*((*uint64)(offset(f.unsafeargsbuffer2, i))) = *((*uint64)(kernelParams[i])) // argv[i] = *f.args[i]
+	   }
+	*/
+	f.sizeofargs = (C.size_t)(len(args) * 8)
+	return nil
+
 }
 func (f *Function) interface2uchararray(args []interface{}) error {
 	for i := range f.argsbuffer {
 		f.argsbuffer[i] = 0
 	}
+
 	f.unsafeargsbuffer = unsafe.Pointer(&f.argsbuffer[0])
 	var argsizes uintptr
+
 	for i := range args {
-		if argsizes+8 > 255 {
+		if argsizes > 255-8 {
 			return errors.New("buffer needs to be set bigger")
 		}
 		switch x := args[i].(type) {
@@ -162,7 +217,10 @@ func (f *Function) interface2uchararray(args []interface{}) error {
 			argsizes += 8
 		case cutil.Mem:
 			//y := reflect.TypeOf(x)
-			C.memcpy(offset(unsafe.Pointer(&f.argsbuffer[argsizes]), argsizes), unsafe.Pointer(x.DPtr()), C.ptrSize)
+
+			C.memcpy(
+				offset(f.unsafeargsbuffer, argsizes),
+				unsafe.Pointer(x.DPtr()), C.ptrSize)
 			argsizes += 8
 		case int32:
 			y := unsafe.Pointer(&x)

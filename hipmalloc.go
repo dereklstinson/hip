@@ -44,6 +44,12 @@ func (h *hipmem) DPtr() *unsafe.Pointer {
 }
 func Malloc(mem cutil.Mem, sib uint) error {
 	sizet := (C.size_t)(sib)
+	dmem, ok := mem.(*DevicePtr)
+	if ok {
+		err := status(C.hipMalloc((*unsafe.Pointer)(&dmem.d), sizet)).error("Malloc")
+		runtime.SetFinalizer(dmem, hipFree)
+		return err
+	}
 	err := status(C.hipMalloc(mem.DPtr(), sizet)).error("Malloc")
 	if err != nil {
 		return err
