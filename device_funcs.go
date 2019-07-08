@@ -3,25 +3,51 @@ package hip
 //#include <hip/hip_runtime_api.h>
 import "C"
 import "unsafe"
+import "github.com/dereklstinson/cutil"
 
 //Device is a device
 type Device C.hipDevice_t
 
 func (d Device) c() C.hipDevice_t      { return (C.hipDevice_t)(d) }
 func (d *Device) cptr() *C.hipDevice_t { return (*C.hipDevice_t)(d) }
-
+//DeviceSynchronize - Waits on all active streams on current device
+//
+//When this command is invoked, the host thread gets blocked until all the commands associated
+//with streams associated with the device. HIP does not support multiple blocking modes (yet!).
 func DeviceSynchronize() error {
 	return status(C.hipDeviceSynchronize()).error("hipDeviceSynchronize")
 }
+//DeviceReset - The state of current device is discarded and updated to a fresh state.
+//
+//Calling this function deletes all streams created, memory allocated, kernels running, events
+//created. Make sure that no other thread is using the device or streams, memory, kernels, events
+//associated with the current device.
 func DeviceReset() error { return status(C.hipDeviceReset()).error("hipDeviceReset") }
-
+//SetDevice - Set default device to be used for subsequent hip API calls from this thread.
+//
+//Sets device as the default device for the calling host thread. Valid device id's are 0... (hipGetDeviceCount()-1).
+//
+//Many HIP APIs implicitly use the "default device" :
+//	Any device memory subsequently allocated from this host thread (using hipMalloc) will be allocated on device.
+//	Any streams or events created from this host thread will be associated with device.
+//	Any kernels launched from this host thread (using hipLaunchKernel) will be executed on device (unless a specific stream is specified, in which case the device associated with that stream will be used).
+//
+//This function may be called from any host thread. Multiple host threads may use the same device. This function does no synchronization with the previous or new device, and has very little runtime overhead. Applications can use hipSetDevice to quickly switch the default device before making a HIP runtime call which uses the default device.
+//
+//The default device is stored in thread-local-storage for each thread. Thread-pool implementations may inherit the default device of the previous thread. A good practice is to always call hipSetDevice at the start of HIP coding sequency to establish a known standard device.
 func SetDevice(deviceID int32) error {
 	return status(C.hipSetDevice((C.int)(deviceID))).error("hipSetDevice")
 }
+
+//GetDevice - Return the default device id for the calling host thread. 
+//
+//HIP maintains an default device for each thread using thread-local-storage. This device is used implicitly for HIP runtime APIs called by this thread.
+//GetDevice returns the default device for the calling host thread.
 func GetDevice() (deviceID int32, err error) {
 	err = status(C.hipGetDevice((*C.int)(&deviceID))).error("hipGetDevice")
 	return deviceID, err
 }
+//GetDeviceCount - Return number of compute-capable devices.
 func GetDeviceCount() (count int32, err error) {
 	err = status(C.hipGetDeviceCount((*C.int)(&count))).error("hipGetDeviceCount")
 	return count, err
@@ -137,4 +163,35 @@ func (d Device) PrimaryCtxReset() error {
 
 func (d Device) PrimaryCtxSetFlags(flags uint32) error {
 	return status(C.hipDevicePrimaryCtxSetFlags(d.c(), (C.uint)(flags))).error("hipDevicePrimaryCtxSetFlags")
+}
+
+func DeviceCanAccessPeer(deviceId, peerDeviceId int32) (bool, error) {
+	var canAccessPeer C.int
+	err := status(C.hipDeviceCanAccessPeer(&canAccessPeer, (C.int)(deviceId), (C.int)(peerDeviceId))).error("DeviceCanAccessPeer")
+	if canAccessPeer > 0 {
+		return true, err
+	}
+	return false, err
+}
+
+//PeerFlag is a holder for flag used in DeviceEnablePeer Access
+type PeerFlag C.uint
+
+//Default is the default flag
+func (p *PeerFlag) Default() PeerFlag { *p = 0; return *p }
+func (p PeerFlag) c() C.uint          { return (C.uint)(p) }
+func DeviceEnablePeerAccess(peerDeviceId int32, p PeerFlag) error {
+	return status(C.hipDeviceEnablePeerAccess((C.int)(peerDeviceId), p.c())).error("hipDeviceEnablePeerAccess")
+}
+
+func DeviceDisablePeerAccess(peerDeviceId int) error {
+	return status(C.hipDeviceDisablePeerAccess((C.int)(peerDeviceId))).error("hipDeviceDisablePeerAccess")
+}
+
+func MemcpyPeer(dst cutil.Mem, dstDeviceId int32, src cutil.Mem, srcDeviceId int32, sib uint) error {
+	return status(C.hipMemcpyPeer(dst.Ptr(), (C.int)(dstDeviceId), src.Ptr(), (C.int)(srcDeviceId), (C.size_t)(sib))).error("hipMemcpyPeer")
+}
+
+func MemcpyPeerAsync(dst cutil.Mem, dstDeviceId int32, src cutil.Mem, srcDeviceId int32, sib uint, s *Stream) error {
+	return status(C.hipMemcpyPeerAsync(dst.Ptr(), (C.int)(dstDeviceId), src.Ptr(), (C.int)(srcDeviceId), (C.size_t)(sib), s.s)).error("hipMemcpyPeer")
 }

@@ -18,9 +18,6 @@ type IpcEventHandle struct {
 	i C.hipIpcEventHandle_t
 }
 
-type FuncAtributes struct {
-	f C.hipFuncAttributes
-}
 type Event struct {
 	e C.hipEvent_t
 }
@@ -179,31 +176,19 @@ func (e status) error(comment string) error {
 }
 func GetLastError() error { return status(C.hipGetLastError()).error("GetLastError") }
 
+type Dim3 C.dim3
+
+func (d Dim3) c() C.dim3 { return (C.dim3)(d) }
+func (d *Dim3) Get() (x, y, z uint32) {
+	x, y, z = (uint32)(d.x), (uint32)(d.y), (uint32)(d.z)
+	return x, y, z
+}
+
+func (d *Dim3) Set(x, y, z uint32) {
+	d.x, d.y, d.z = (C.uint32_t)(x), (C.uint32_t)(y), (C.uint32_t)(z)
+}
+
 /*
-typedef enum hipJitOption {
-    hipJitOptionMaxRegisters = 0,
-    hipJitOptionThreadsPerBlock,
-    hipJitOptionWallTime,
-    hipJitOptionInfoLogBuffer,
-    hipJitOptionInfoLogBufferSizeBytes,
-    hipJitOptionErrorLogBuffer,
-    hipJitOptionErrorLogBufferSizeBytes,
-    hipJitOptionOptimizationLevel,
-    hipJitOptionTargetFromContext,
-    hipJitOptionTarget,
-    hipJitOptionFallbackStrategy,
-    hipJitOptionGenerateDebugInfo,
-    hipJitOptionLogVerbose,
-    hipJitOptionGenerateLineInfo,
-    hipJitOptionCacheMode,
-    hipJitOptionSm3xOpt,
-    hipJitOptionFastCompile,
-    hipJitOptionNumOptions
-} hipJitOption;
-
-
-
-
 typedef struct hipPointerAttribute_t {
     enum hipMemoryType memoryType;
     int device;
@@ -215,11 +200,7 @@ typedef struct hipPointerAttribute_t {
 
 //func  hipPointerGetAttributes(hipPointerAttribute_t* attributes, const void* ptr)error{return status(C.hipPointerGetAttributes(hipPointerAttribute_t* attributes, const void* ptr)).error("hipPointerGetAttributes")}
 
-typedef struct dim3 {
-    uint32_t x;  ///< x
-    uint32_t y;  ///< y
-    uint32_t z;  ///< z
-} dim3;
+
 
 typedef struct hipLaunchParams_t {
     void* func;             ///< Device function symbol

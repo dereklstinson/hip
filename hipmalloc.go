@@ -24,7 +24,23 @@ func (d *DevicePtr) Ptr() unsafe.Pointer {
 func (d *DevicePtr) DPtr() *unsafe.Pointer {
 	return (*unsafe.Pointer)(&d.d)
 }
+func (d *DevicePtr) MemGetAddressRange() (pbase *DevicePtr, size uint, err error) {
+	pbase = new(DevicePtr)
+	var psize C.size_t
+	err = status(C.hipMemGetAddressRange(&pbase.d, &psize, d.d)).error("hipMemGetAddressRange")
+	return pbase, (uint)(psize), err
+}
+func (d *DevicePtr) MemsetD8(value uint8, sib uint) error {
+	return status(C.hipMemsetD8(d.d, (C.uchar)(value), (C.size_t)(sib))).error("hipMemsetD8")
+}
+func (d *DevicePtr) MemsetD32(value int32, sib uint) error {
+	return status(C.hipMemsetD32(d.d, (C.int)(value), (C.size_t)(sib))).error("hipMemsetD32")
+}
+func (d *DevicePtr) MemsetD32Async(value int32, sib uint, s *Stream) error {
+	return status(C.hipMemsetD32Async(d.d, (C.int)(value), (C.size_t)(sib), s.s)).error("hipMemsetD32Async")
+}
 
+//func  ModuleGetGlobal(hipDeviceptr_t* dptr, size_t* bytes, hipModule_t hmod, const char* name)error{return status(C.hipModuleGetGlobal(hipDeviceptr_t* dptr, size_t* bytes, hipModule_t hmod, const char* name)).error("hipModuleGetGlobal")}
 type HipArrayDescriptor C.HIP_ARRAY_DESCRIPTOR
 
 /*typedef struct HIP_ARRAY_DESCRIPTOR {
@@ -143,8 +159,10 @@ func MallocPitch(ptr cutil.Mem, width, height uint) (pitch uint, err error) {
 	pitch = (uint)(p)
 	return pitch, err
 }
+func Memset(dst cutil.Mem, value int32, sib uint) error {
+	return status(C.hipMemset(dst.Ptr(), (C.int)(value), (C.size_t)(sib))).error("hipMemset")
+}
 
-//func  ModuleGetGlobal(hipDeviceptr_t* dptr, size_t* bytes, hipModule_t hmod, const char* name)error{return status(C.hipModuleGetGlobal(hipDeviceptr_t* dptr, size_t* bytes, hipModule_t hmod, const char* name)).error("hipModuleGetGlobal")}
 //func  GetSymbolAddress(void** devPtr, const void* symbolName)error{return status(C.hipGetSymbolAddress(void** devPtr, const void* symbolName)).error("hipGetSymbolAddress")}
 //func  GetSymbolSize(size_t* size, const void* symbolName)error{return status(C.hipGetSymbolSize(size_t* size, const void* symbolName)).error("hipGetSymbolSize")}
 //func  MemcpyToSymbol(const void* symbolName, const void* src, size_t sizeBytes, size_t offset __dparm(0),hipMemcpyKind kind __dparm(hipMemcpyHostToDevice))error{return status(C.hipMemcpyToSymbol(const void* symbolName, const void* src, size_t sizeBytes, size_t offset __dparm(0),hipMemcpyKind kind __dparm(hipMemcpyHostToDevice))).error("hipMemcpyToSymbol")}
@@ -152,11 +170,8 @@ func MallocPitch(ptr cutil.Mem, width, height uint) (pitch uint, err error) {
 //func  MemcpyFromSymbol(void* dst, const void* symbolName,size_t sizeBytes, size_t offset __dparm(0),hipMemcpyKind kind __dparm(hipMemcpyDeviceToHost))error{return status(C.hipMemcpyFromSymbol(void* dst, const void* symbolName,size_t sizeBytes, size_t offset __dparm(0),hipMemcpyKind kind __dparm(hipMemcpyDeviceToHost))).error("hipMemcpyFromSymbol")}
 //func  MemcpyFromSymbolAsync(void* dst, const void* symbolName,size_t sizeBytes, size_t offset,hipMemcpyKind kind,hipStream_t stream __dparm(0))error{return status(C.hipMemcpyFromSymbolAsync(void* dst, const void* symbolName,size_t sizeBytes, size_t offset,hipMemcpyKind kind,hipStream_t stream __dparm(0))).error("hipMemcpyFromSymbolAsync")}
 
-//func  Memset(void* dst, int value, size_t sizeBytes)error{return status(C.hipMemset(void* dst, int value, size_t sizeBytes)).error("hipMemset")}
-//func  MemsetD8(hipDeviceptr_t dest, unsigned char value, size_t sizeBytes)error{return status(C.hipMemsetD8(hipDeviceptr_t dest, unsigned char value, size_t sizeBytes)).error("hipMemsetD8")}
-//func  MemsetD32(hipDeviceptr_t dest, int value, size_t count)error{return status(C.hipMemsetD32(hipDeviceptr_t dest, int value, size_t count)).error("hipMemsetD32")}
 //func  MemsetAsync(void* dst, int value, size_t sizeBytes, hipStream_t stream __dparm(0))error{return status(C.hipMemsetAsync(void* dst, int value, size_t sizeBytes, hipStream_t stream __dparm(0))).error("hipMemsetAsync")}
-//func  MemsetD32Async(hipDeviceptr_t dst, int value, size_t count, hipStream_t stream __dparm(0))error{return status(C.hipMemsetD32Async(hipDeviceptr_t dst, int value, size_t count, hipStream_t stream __dparm(0))).error("hipMemsetD32Async")}
+
 //func  Memset2D(void* dst, size_t pitch, int value, size_t width, size_t height)error{return status(C.hipMemset2D(void* dst, size_t pitch, int value, size_t width, size_t height)).error("hipMemset2D")}
 //func  Memset2DAsync(void* dst, size_t pitch, int value, size_t width, size_t height,hipStream_t stream __dparm(0))error{return status(C.hipMemset2DAsync(void* dst, size_t pitch, int value, size_t width, size_t height,hipStream_t stream __dparm(0))).error("hipMemset2DAsync")}
 //func  Memset3D(hipPitchedPtr pitchedDevPtr, int  value, hipExtent extent )error{return status(C.hipMemset3D(hipPitchedPtr pitchedDevPtr, int  value, hipExtent extent )).error("hipMemset3D")}
