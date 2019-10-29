@@ -53,8 +53,7 @@ func main() {
 
 	check(hip.MemcpyDtoD(gpuC, gpuA, size*4))
 	mod := new(hip.Module)
-	///home/derek/go/src/github.com/dereklstinson/hipgo/kernel/example.cpp
-	check(mod.Load("/home/derek/go/src/github.com/dereklstinson/hipgo/kernel/example.co"))
+	check(mod.Load("example.co"))
 
 	kernelSingleAdd, err := mod.GetFunction("KernAddFloat")
 	check(err)

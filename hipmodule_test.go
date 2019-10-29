@@ -77,7 +77,7 @@ func TestFunction_Launch(t *testing.T) {
 	err = MemcpyDtoD(gpuC, gpuA, size*2)
 	mod := new(Module)
 	///home/derek/go/src/github.com/dereklstinson/hipgo/kernel/example.cpp
-	err = mod.Load("/home/derek/go/src/github.com/dereklstinson/hipgo/kernel/example.co")
+	err = mod.Load("example.co")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -110,8 +110,12 @@ func TestFunction_Launch(t *testing.T) {
 	if err != nil {
 		t.Error(err)
 	}
-	t.Error(Chalf)
-	//fmt.Println(Chalf)
+	ChalfSingle:=half.ToFloat32(Chalf)
+	for i:= range ChalfSingle{
+		if ChalfSingle[i]!=3{
+			t.Fatal("Not3")
+		}
+	}
 }
 func TestFunction_Launch2(t *testing.T) {
 	runtime.LockOSThread()
@@ -179,8 +183,7 @@ func TestFunction_Launch2(t *testing.T) {
 	}
 	err = MemcpyDtoD(gpuC, gpuA, size*4)
 	mod := new(Module)
-	///home/derek/go/src/github.com/dereklstinson/hipgo/kernel/example.cpp
-	err = mod.Load("/home/derek/go/src/github.com/dereklstinson/hipgo/kernel/example.co")
+	err = mod.Load("example.co")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -217,7 +220,10 @@ func TestFunction_Launch2(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	t.Error("check printing")
-	//t.Error(Chalf)
-	//fmt.Println(Chalf)
+	for i:=range Chalf{
+		if Chalf[i]!=3{
+			t.Fatal("Chalf not 3")
+		}
+	}
+
 }

@@ -3,7 +3,7 @@ package hip
 import (
 	"errors"
 
-	"github.com/dereklstinson/GoCudnn/kernels"
+//	"github.com/dereklstinson/GoCudnn/kernels"
 )
 
 //Config is for a 1d kernel launch
@@ -35,6 +35,9 @@ type Config3d struct {
 	BlockCounty     uint32
 	BlockCountz     uint32
 }
+func divup(a, b int32) int32 {
+	return (a + b - 1) / b
+}
 
 func DeviceConfig1d(device int32, elements int32) (Config, error) {
 	prop, err := GetDeviceProperties(device)
@@ -43,7 +46,7 @@ func DeviceConfig1d(device int32, elements int32) (Config, error) {
 	}
 	ptc := min((prop.MultiProcessorCount() * prop.MaxThreadsPerMultiProcessor()), elements)
 	threadperblock := min(1024, prop.MaxThreadsPerBlock())
-	innerbcount := kernels.DivUp(ptc, threadperblock)
+	innerbcount := divup(ptc, threadperblock)
 	bcount := min(innerbcount, prop.MultiProcessorCount())
 	return Config{
 		Elements: elements,
